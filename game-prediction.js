@@ -3,7 +3,7 @@ X=0;
 var ball1=true;
 var ball2=false;
 var ball3=false;
-var ball4=false;
+var ball4=true;
 var ball5=true;
 
 var t = Date.now();
@@ -51,11 +51,11 @@ function ballUpdate(){
 //        }
 
 
-        //Va essayer de detecter s'il y a une colision sur les 10 deplacements à venir.
+        //Va essayer de detecter s'il y a une colision sur les X (i>X) deplacements à venir.
         //Si il y en a une, fait bouger pour s'en éloigner.
         function detectDanger (balls, i){
             var n = WIDTH * BALL_SIZE;
-            if(i>10){
+            if(i>25){
                 return 0;
             }
             var nexPositions = [];
