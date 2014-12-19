@@ -9,6 +9,7 @@ lastV = 0;
 tt = 0;
 var moyenne = moyenne2 = 0;
 var p = [{},{},{}];
+serverPlayer2PosX=0.5;
 function ballUpdate(balls){
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
     //Le but du jeux : faire bouger X (il peut aller de 0 à WIDTH=400) pour qu'il évite d'être en collision avec une ball.
@@ -17,44 +18,58 @@ function ballUpdate(balls){
     //Le plus bas des boules est à 278
     //temps depuis dernier
     //Acceleration moyenne (avec y1 variant de 0->1) : -0.000018253172955523
-    var acceleration = -0.000018253172955523;
-    for(var i=0;i<1;i++){
-        p[i] = p[i+1];
-        p[2].xpolation[i].x=p[i].x;
-        p[2].xpolation[i].y=p[i].y;
-        p[2].xpolation[i].v=p[i].v;
-    }
-
-    var dt = Date.now()-t;
-    t = Date.now();
-    dy = balls[0].y1-lastY;
-    var v=dy/dt;
-    var dv = v-lastV;
-    var a = dv/dt
-    p[2].a = acceleration;
-    p[2].v = v;
-    p[2].x = balls[0].x1;
-    p[2].y = balls[0].y1;
+//    var acceleration = -0.000018253172955523;
+//    var dt = Date.now()-t;
+//    t = Date.now();
+//    dy = balls[0].y1-lastY;
+//    var v=dy/dt;
+//    var dv = v-lastV;
+//    var a = dv/dt
     //Log les resultats pour afficher sous excel
     //console.log(dt+","+t+","+balls[0].x1+","+balls[0].y1);
     //Cacule les positions futures. On prend les position des 10 dt suivantes
-    p[2].xpolation = [];
-    for(var i=2;i<10;i++){
-        p[2].xpolation[i].a = acceleration;
-        p[2].xpolation[i].v = p[2].xpolation[i-1].v+1 + dt*acceleration;
-        //p[2].x = balls[0].x1 = p[2].xpolation[i-2].x1+1 + dt*p[2].xpolation[i-1].v
-        p[2].x = balls[0].y1 = p[2].xpolation[i-2].y1+1 + dt*p[2].xpolation[i-1].v;
+    if(mBalls.length>0){
+        var dt = 0.0168;
+        var dx = (0.483-0.528)/3.5;
+        console.log(dx)
+        function move(x){
+            serverPlayer2PosX += dx*x;
+        }
+
+        var n = WIDTH * BALL_SIZE;
+        var dangerZone = 0 ;
+        for(var i=1;i<10;i++){
+            for (var t = 0; t < mBalls.length; t++){
+                var ball = $.extend(true, {}, mBalls[t]);
+                updateBallPosition(i*dt*1.5, ball);
+                var ballX = ball[0] * WIDTH - n / 2;
+                var ballY = .8 * HEIGHT - ball[1] * WIDTH - n / 2;
+                if(ballY>230){
+                    //ctx.rect(ballX,ballY,n,n);
+                    //ctx.stroke();
+                    if(serverPlayer2PosX*WIDTH>ballX && serverPlayer2PosX*WIDTH<ballX+n){
+                        dangerZone = Math.abs(ball[2])/ball[2]*-1;
+                    }
+                }
+                var n = WIDTH * PLAYER_SIZE;
+                console.log(serverPlayer2PosX)
+                ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
+                if(i == 1){
+                    if(ball[0] < serverPlayer2PosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                        && ball[0] > serverPlayer2PosX - .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                        && ball[1] < 1.7 * PLAYER_SIZE){
+                        console.log("coooolision-------------------------------------------------------------------------")
+                    }
+
+                }
+
+                //ctx.drawImage(spriteRock, ballX, ballY, n, n);
+            }
+        }
+        if(dangerZone != 0){
+            move(dangerZone);
+        }
     }
-    lastY = balls[0].y1;
-    lastV = v;
-    lastA = a;
-
-
-    //Hot zone
-//    if(balls[0].y>150){
-//        ctx.rect(balls[0].x,265,30,55);
-//        ctx.stroke();
-//    }
 
 }
 function playParty(orders) {
@@ -173,19 +188,33 @@ function insertMBalls(e, n) {
     }
 }
 
-function updateBalls(e, n) {
-    for (var t = 0; t < n.length; t++){
-        n[t][0] += n[t][2] * e;
-        n[t][1] += -1.1 * e * e / 2 + n[t][3] * e;
-        n[t][3] += -1.1 * e;
-        n[t][0] < BALL_SIZE / 2 && n[t][2] < 0 && (n[t][2] = -n[t][2]);
-        n[t][0] > 1 - BALL_SIZE / 2 && n[t][2] > 0 && (n[t][2] = -n[t][2]);
-        n[t][1] < BALL_SIZE / 2 && (n[t][3] = n[t][4], n[t][1] = BALL_SIZE / 2);
-        n[t][0] < serverPlayerPosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-            && n[t][0] > serverPlayerPosX - .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-            && n[t][1] < 1.7 * PLAYER_SIZE && (maybeFinish = !0), n[t][2] > 0
-            && (mBallsRotation[t] += 100 * e, mBallsRotation[t] > 360 && (mBallsRotation[t] -= 360));
-        n[t][2] < 0 && (mBallsRotation[t] -= 100 * e, mBallsRotation[t] < 0 && (mBallsRotation[t] += 360))
+
+function updateBallPosition(dt, ball) {
+    ball[0] += ball[2] * dt;
+    ball[1] += -1.1 * dt * dt / 2 + ball[3] * dt;
+    ball[3] += -1.1 * dt; //vitesse
+    ball[0] < BALL_SIZE / 2 && ball[2] < 0 && (ball[2] = -ball[2]);
+    ball[0] > 1 - BALL_SIZE / 2 && ball[2] > 0 && (ball[2] = -ball[2]);
+    ball[1] < BALL_SIZE / 2 && (ball[3] = ball[4], ball[1] = BALL_SIZE / 2);
+//            ball[2] > 0 && (mBallsRotation[t] += 100 * dt, mBallsRotation[t] > 360 && (mBallsRotation[t] -= 360));
+//        ball[2] < 0 && (mBallsRotation[t] -= 100 * dt, mBallsRotation[t] < 0 && (mBallsRotation[t] += 360))
+}
+
+
+function updateBalls(dt, balls) {
+//    console.log(dt)
+    for (var t = 0; t < balls.length; t++){
+        balls[t][0] += balls[t][2] * dt;
+        balls[t][1] += -1.1 * dt * dt / 2 + balls[t][3] * dt;
+        balls[t][3] += -1.1 * dt; //vitesse
+        balls[t][0] < BALL_SIZE / 2 && balls[t][2] < 0 && (balls[t][2] = -balls[t][2]);
+        balls[t][0] > 1 - BALL_SIZE / 2 && balls[t][2] > 0 && (balls[t][2] = -balls[t][2]);
+        balls[t][1] < BALL_SIZE / 2 && (balls[t][3] = balls[t][4], balls[t][1] = BALL_SIZE / 2);
+        balls[t][0] < serverPlayerPosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+            && balls[t][0] > serverPlayerPosX - .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+            && balls[t][1] < 1.7 * PLAYER_SIZE && (maybeFinish = !0),
+            balls[t][2] > 0 && (mBallsRotation[t] += 100 * dt, mBallsRotation[t] > 360 && (mBallsRotation[t] -= 360));
+        balls[t][2] < 0 && (mBallsRotation[t] -= 100 * dt, mBallsRotation[t] < 0 && (mBallsRotation[t] += 360))
     }
 }
 
@@ -218,7 +247,7 @@ function render() {
         }
     }
     var n = WIDTH * PLAYER_SIZE;
-    ctx.drawImage(spritePlayer2, X/400 * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
+    //ctx.drawImage(spritePlayer2, X/400 * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
 //    ctx.rect(0+X,265,30,55);
 //    ctx.stroke();
 }
@@ -233,7 +262,6 @@ function renderBlackFinish(e) {
 
 function renderBalls(e) {
     var n = WIDTH * BALL_SIZE;
-    var balls = [];
     for (var t = 0; t < e.length; t++){
         ctx.save();
         ctx.translate(e[t][0] * WIDTH, .8 * HEIGHT - e[t][1] * WIDTH);
@@ -241,16 +269,15 @@ function renderBalls(e) {
         ctx.translate(-(e[t][0] * WIDTH), -(.8 * HEIGHT - e[t][1] * WIDTH));
         var ballX = e[t][0] * WIDTH - n / 2;
         var ballY = .8 * HEIGHT - e[t][1] * WIDTH - n / 2;
-        balls.push({x: ballX, y: ballY, d: n, x1:e[t][0], y1:e[t][1]});
         ctx.drawImage(spriteRock, ballX, ballY, n, n);
         ctx.restore()
     }
-    ballUpdate(balls);
+    ballUpdate();
 }
 
 function renderPlayer(e) {
     var n = WIDTH * PLAYER_SIZE;
-    ctx.drawImage(spritePlayer, e * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
+    //ctx.drawImage(spritePlayer, e * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
 }
 
 function renderGameInfo(e, n, t) {
