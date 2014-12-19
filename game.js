@@ -1,4 +1,11 @@
 X=0;
+//BALL SUPPLEMENTAIRES, copie ajoutées
+var ball1=true;
+var ball2=false;
+var ball3=false;
+var ball4=false;
+var ball5=true;
+
 var t = Date.now();
 var lastY= 0, dy=0;
 var minY=-9999;
@@ -10,7 +17,9 @@ tt = 0;
 var moyenne = moyenne2 = 0;
 var p = [{},{},{}];
 serverPlayer2PosX=0.5;
-function ballUpdate(balls){
+var a =0;
+function ballUpdate(){
+    a++;
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
     //Le but du jeux : faire bouger X (il peut aller de 0 à WIDTH=400) pour qu'il évite d'être en collision avec une ball.
     //Zone de collision: rectangle de hauteur 55 et largeur 30. Position sur le canvas : ctx.rect(0+X,265,30,55);
@@ -31,17 +40,20 @@ function ballUpdate(balls){
     if(mBalls.length>0){
         var dt = 0.0168;
         var dx = (0.483-0.528)/3.5;
-        console.log(dx)
+        //console.log(dx)
         function move(x){
             serverPlayer2PosX += dx*x;
         }
+//        if(mBalls[2]){
+//            console.log("if(party1["+(a+55)+"]) party1["+(a+55)+"][1][3].push(["+mBalls[0][0]+","+mBalls[0][1]+","+mBalls[0][2]+","+mBalls[0][3]+","+mBalls[0][4]+"])")
+//        }
 
         var n = WIDTH * BALL_SIZE;
         var dangerZone = 0 ;
         for(var i=1;i<10;i++){
             for (var t = 0; t < mBalls.length; t++){
                 var ball = $.extend(true, {}, mBalls[t]);
-                updateBallPosition(i*dt*1.5, ball);
+                updateBallPosition(i*dt*1.1, ball);
                 var ballX = ball[0] * WIDTH - n / 2;
                 var ballY = .8 * HEIGHT - ball[1] * WIDTH - n / 2;
                 if(ballY>230){
@@ -59,7 +71,7 @@ function ballUpdate(balls){
                     }
                 }
                 var n = WIDTH * PLAYER_SIZE;
-                console.log(serverPlayer2PosX)
+                //console.log(serverPlayer2PosX)
                 ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
                 if(i == 1){
                     if(ball[0] < serverPlayer2PosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
@@ -111,6 +123,7 @@ socket = {
 
     },
     "update": function (e) {
+        //ballUpdate();
         update(e);
 //        var n = !1, t = e[2];
 //        if (void 0 != timeServerLastPacket) {
@@ -244,7 +257,6 @@ function render() {
 
 
     mGameStatus >= 0 && (renderBackground(), renderPlayer(mPlayerPosX), renderBalls(mBalls));
-
     if (mGameStatus >= 0) {
         if (0 == 1 /*socket.connected*/ || 2 == mGameStatus) {
             void 0 == alphaFinish && (alphaFinish = 0);
