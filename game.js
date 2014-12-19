@@ -38,14 +38,12 @@ function ballUpdate(balls){
     //Log les resultats pour afficher sous excel
     //console.log(dt+","+t+","+balls[0].x1+","+balls[0].y1);
     //Cacule les positions futures. On prend les position des 10 dt suivantes
-    var fv = v;
     p[2].xpolation = [];
-    for(var i=0;i<10;i++){
+    for(var i=2;i<10;i++){
         p[2].xpolation[i].a = acceleration;
         p[2].xpolation[i].v = p[2].xpolation[i-1].v+1 + dt*acceleration;
-        p[2].x = balls[0].x1;
-        p[2].y = balls[0].y1;
-        fv = fv+a*dt;
+        //p[2].x = balls[0].x1 = p[2].xpolation[i-2].x1+1 + dt*p[2].xpolation[i-1].v
+        p[2].x = balls[0].y1 = p[2].xpolation[i-2].y1+1 + dt*p[2].xpolation[i-1].v;
     }
     lastY = balls[0].y1;
     lastV = v;
