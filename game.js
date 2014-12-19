@@ -48,7 +48,14 @@ function ballUpdate(balls){
                     //ctx.rect(ballX,ballY,n,n);
                     //ctx.stroke();
                     if(serverPlayer2PosX*WIDTH>ballX && serverPlayer2PosX*WIDTH<ballX+n){
-                        dangerZone = Math.abs(ball[2])/ball[2]*-1;
+                        var direction = Math.abs(ball[2])/ball[2];
+                        if(serverPlayer2PosX*WIDTH<PLAYER_SIZE*1.5 && direction == -1){
+                            dangerZone = 1;
+                        } else if(serverPlayer2PosX*WIDTH>WIDTH-PLAYER_SIZE*1.5 && direction == 1){
+                            dangerZone = 1;
+                        } else {
+                            dangerZone = direction*-1;
+                        }
                     }
                 }
                 var n = WIDTH * PLAYER_SIZE;
