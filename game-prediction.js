@@ -39,7 +39,7 @@ function ballUpdate(){
     //Cacule les positions futures. On prend les position des 10 dt suivantes
     if(mBalls.length>0){
         var dt = 0.0168;
-        var dx = (0.483-0.528)/3.5;
+        var dx = 0.0168;
         //console.log(dx)
         function move(x){
             serverPlayer2PosX += dx*x;
