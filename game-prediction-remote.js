@@ -1,94 +1,94 @@
-X=0;
-//BALL SUPPLEMENTAIRES, copie ajoutées
-var ball1=true;
-var ball2=false;
-var ball3=false;
-var ball4=false;
-var ball5=true;
-
 var t = Date.now();
-var lastY= 0, dy=0;
-var minY=-9999;
-var maxY=0;
-var minYv=-9999;
-var maxYv=0;
-lastV = 0;
-tt = 0;
-var moyenne = moyenne2 = 0;
-var p = [{},{},{}];
-serverPlayer2PosX=0.5;
 function ballUpdate(){
-    //ICI dans balls tu as un tableau avec toutes les balles disponibles.
-    //Le but du jeux : faire bouger X (il peut aller de 0 à WIDTH=400) pour qu'il évite d'être en collision avec une ball.
-    //Zone de collision: rectangle de hauteur 55 et largeur 30. Position sur le canvas : ctx.rect(0+X,265,30,55);
-    //Le haut des boules est a 40
-    //Le plus bas des boules est à 278
-    //temps depuis dernier
-    //Acceleration moyenne (avec y1 variant de 0->1) : -0.000018253172955523
-//    var acceleration = -0.000018253172955523;
-//    var dt = Date.now()-t;
-//    t = Date.now();
-//    dy = balls[0].y1-lastY;
-//    var v=dy/dt;
-//    var dv = v-lastV;
-//    var a = dv/dt
-    //Log les resultats pour afficher sous excel
-    //console.log(dt+","+t+","+balls[0].x1+","+balls[0].y1);
-    //Cacule les positions futures. On prend les position des 10 dt suivantes
-    if(mBalls.length>0){
-        var dt = 0.0168;
-        var dx = 0.0168;
-        //console.log(dx)
+    var dt = (Date.now()-t)/1000;
+    t= Date.now();
+    if(mBalls.length>0 && dt>0){
+        var dx = dt;
         function move(x){
-            serverPlayer2PosX += dx*x;
+            //serverPlayer2PosX += dx*x;
+            //On ne peut pas dépasser
+            //serverPlayer2PosX = Math.max(PLAYER_SIZE/2,Math.min(serverPlayer2PosX, 1-PLAYER_SIZE));
+            console.log(x);
+            socket.emit("commande", x);
+            setTimeout(function () {
+                console.log(0);
+                socket.emit("commande", 0)
+            }, dx-2);
         }
-//        if(mBalls[2]){
-//            console.log("if(party1["+(a+55)+"]) party1["+(a+55)+"][1][3].push(["+mBalls[0][0]+","+mBalls[0][1]+","+mBalls[0][2]+","+mBalls[0][3]+","+mBalls[0][4]+"])")
-//        }
 
-        var n = WIDTH * BALL_SIZE;
-        var dangerZone = 0 ;
-        for(var i=1;i<10;i++){
-            for (var t = 0; t < mBalls.length; t++){
-                var ball = $.extend(true, {}, mBalls[t]);
-                updateBallPosition(i*dt*1.1, ball);
+
+        //Va essayer de detecter s'il y a une colision sur les X (i>X) deplacements à venir.
+        //Si il y en a une, fait bouger pour s'en éloigner.
+        function detectDanger (balls, i){
+            var n = WIDTH * BALL_SIZE*1.1;
+            if(i>20){
+                return 0;
+            }
+            var nexPositions = [];
+            var dangerZone = 0 ;
+            for (var t = 0; t < balls.length; t++){
+                var ball = $.extend(true, {}, balls[t]);
+                nexPositions[t] = ball;
+                updateBallPosition(dt*1.1, ball);
                 var ballX = ball[0] * WIDTH - n / 2;
                 var ballY = .8 * HEIGHT - ball[1] * WIDTH - n / 2;
-                if(ballY>230){
-                    //ctx.rect(ballX,ballY,n,n);
-                    //ctx.stroke();
-                    if(serverPlayer2PosX*WIDTH>ballX && serverPlayer2PosX*WIDTH<ballX+n){
+                //console.log( n / 2)
+                if(ballY>210){
+                    //Ca risque de toucher, on le pousse !
+                    if(serverPlayerPosX*WIDTH>ballX && serverPlayerPosX*WIDTH<ballX+n){
                         var direction = Math.abs(ball[2])/ball[2];
-                        if(serverPlayer2PosX*WIDTH<PLAYER_SIZE*1.5 && direction == -1){
+                        //Si il est collé contre un coin, on essaye de le faire partir du coin
+                        if(serverPlayerPosX*WIDTH<PLAYER_SIZE*WIDTH*1.5 && direction == -1){
                             dangerZone = 1;
-                        } else if(serverPlayer2PosX*WIDTH>WIDTH-PLAYER_SIZE*1.5 && direction == 1){
-                            dangerZone = 1;
+                        } else if(serverPlayerPosX*WIDTH>WIDTH-PLAYER_SIZE*WIDTH*1.5 && direction == 1){
+                            dangerZone = -1;
                         } else {
                             dangerZone = direction*-1;
                         }
-                    }
+                    }lastNewDir
                 }
                 var n = WIDTH * PLAYER_SIZE;
-                //console.log(serverPlayer2PosX)
-                ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
-                if(i == 1){
-                    if(ball[0] < serverPlayer2PosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                        && ball[0] > serverPlayer2PosX - .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                        && ball[1] < 1.7 * PLAYER_SIZE){
-                        console.log("coooolision-------------------------------------------------------------------------")
-                    }
-
-                }
-
-                //ctx.drawImage(spriteRock, ballX, ballY, n, n);
+            }
+            //RAS, on va regarder pour les 10 positions suivantes.
+            if(dangerZone == 0){
+                return detectDanger (nexPositions, ++i);
+            } else {
+                return dangerZone;
             }
         }
-        if(dangerZone != 0){
-            move(dangerZone);
+        var direction = detectDanger (mBalls, 0);
+        if(direction != 0){
+            move(direction);
         }
     }
-
 }
+
+function renderBalls(e) {
+    var n = WIDTH * BALL_SIZE;
+    for (var t = 0; t < e.length; t++){
+        ctx.save();
+        ctx.translate(e[t][0] * WIDTH, .8 * HEIGHT - e[t][1] * WIDTH);
+        ctx.rotate(mBallsRotation[t] * Math.PI / 180);
+        ctx.translate(-(e[t][0] * WIDTH), -(.8 * HEIGHT - e[t][1] * WIDTH));
+        var ballX = e[t][0] * WIDTH - n / 2;
+        var ballY = .8 * HEIGHT - e[t][1] * WIDTH - n / 2;
+        ctx.drawImage(spriteRock, ballX, ballY, n, n);
+        ctx.restore()
+    }
+    ballUpdate();
+}
+
+
+/**
+ * FIN A REMPLACER
+ */
+
+
+
+
+
+
+
 function playParty(orders) {
     var i =0;
     play();
@@ -275,21 +275,6 @@ function renderBackground() {
 
 function renderBlackFinish(e) {
     ctx.fillStyle = "rgba(0, 0, 0," + e + ")", ctx.fillRect(0, 0, 400, 400)
-}
-
-function renderBalls(e) {
-    var n = WIDTH * BALL_SIZE;
-    for (var t = 0; t < e.length; t++){
-        ctx.save();
-        ctx.translate(e[t][0] * WIDTH, .8 * HEIGHT - e[t][1] * WIDTH);
-        ctx.rotate(mBallsRotation[t] * Math.PI / 180);
-        ctx.translate(-(e[t][0] * WIDTH), -(.8 * HEIGHT - e[t][1] * WIDTH));
-        var ballX = e[t][0] * WIDTH - n / 2;
-        var ballY = .8 * HEIGHT - e[t][1] * WIDTH - n / 2;
-        ctx.drawImage(spriteRock, ballX, ballY, n, n);
-        ctx.restore()
-    }
-    ballUpdate();
 }
 
 function renderPlayer(e) {

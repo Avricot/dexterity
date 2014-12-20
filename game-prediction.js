@@ -7,19 +7,9 @@ var ball4=true;
 var ball5=true;
 
 var t = Date.now();
-var lastY= 0, dy=0;
-var minY=-9999;
-var maxY=0;
-var minYv=-9999;
-var maxYv=0;
-lastV = 0;
-tt = 0;
-var moyenne = moyenne2 = 0;
-var p = [{},{},{}];
+
 serverPlayer2PosX=0.5;
-var a =0;
 function ballUpdate(){
-    a++;
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
     //Le but du jeux : faire bouger X (il peut aller de 0 à WIDTH=400) pour qu'il évite d'être en collision avec une ball.
     //Zone de collision: rectangle de hauteur 55 et largeur 30. Position sur le canvas : ctx.rect(0+X,265,30,55);
@@ -37,14 +27,20 @@ function ballUpdate(){
     //Log les resultats pour afficher sous excel
     //console.log(dt+","+t+","+balls[0].x1+","+balls[0].y1);
     //Cacule les positions futures. On prend les position des 10 dt suivantes
-    if(mBalls.length>0){
-        var dt = 0.0168;
-        var dx = 0.0168;
-        //console.log(dx)
+    var dt = (Date.now()-t)/1000;
+    t= Date.now();
+    if(mBalls.length>0 && dt>0){
+//        var dx = 0.0168;
+//        var dt = 0.0168;
+        var dx = dt;
         function move(x){
             serverPlayer2PosX += dx*x;
             //On ne peut pas dépasser
-            //serverPlayer2PosX = Math.max(0,Math.min(serverPlayer2PosX, WIDTH));
+            serverPlayer2PosX = Math.max(PLAYER_SIZE/2,Math.min(serverPlayer2PosX, 1-PLAYER_SIZE));
+            socket.emit("commande", x)
+            setTimeout(function () {
+                socket.emit("commande", 0)
+            }, dx-2);
         }
 //        if(mBalls[2]){
 //            console.log("if(party1["+(a+55)+"]) party1["+(a+55)+"][1][3].push(["+mBalls[0][0]+","+mBalls[0][1]+","+mBalls[0][2]+","+mBalls[0][3]+","+mBalls[0][4]+"])")
@@ -54,8 +50,8 @@ function ballUpdate(){
         //Va essayer de detecter s'il y a une colision sur les X (i>X) deplacements à venir.
         //Si il y en a une, fait bouger pour s'en éloigner.
         function detectDanger (balls, i){
-            var n = WIDTH * BALL_SIZE;
-            if(i>25){
+            var n = WIDTH * BALL_SIZE*1.1;
+            if(i>20){
                 return 0;
             }
             var nexPositions = [];
@@ -67,26 +63,26 @@ function ballUpdate(){
                 var ballX = ball[0] * WIDTH - n / 2;
                 var ballY = .8 * HEIGHT - ball[1] * WIDTH - n / 2;
                 //console.log( n / 2)
-                if(ballY>230){
+                if(ballY>225){
 //                    ctx.rect(ballX,ballY,n,n);
 //                    ctx.stroke();
                     //Ca risque de toucher, on le pousse !
                     if(serverPlayer2PosX*WIDTH>ballX && serverPlayer2PosX*WIDTH<ballX+n){
                         var direction = Math.abs(ball[2])/ball[2];
                         //Si il est collé contre un coin, on essaye de le faire partir du coin
-                        if(serverPlayer2PosX*WIDTH<PLAYER_SIZE*1.5 && direction == -1){
+                        if(serverPlayer2PosX*WIDTH<PLAYER_SIZE*WIDTH*1.5 && direction == -1){
                             dangerZone = 1;
-                        } else if(serverPlayer2PosX*WIDTH>WIDTH-PLAYER_SIZE*1.5 && direction == 1){
-                            dangerZone = 1;
+                        } else if(serverPlayer2PosX*WIDTH>WIDTH-PLAYER_SIZE*WIDTH*1.5 && direction == 1){
+                            dangerZone = -1;
                         } else {
                             dangerZone = direction*-1;
                         }
-                    }
+                    }lastNewDir
                 }
                 var n = WIDTH * PLAYER_SIZE;
                 //console.log(serverPlayer2PosX)
                 ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
-                if(i == 1){
+                if(i == 0){
                     if(ball[0] < serverPlayer2PosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
                         && ball[0] > serverPlayer2PosX - .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
                         && ball[1] < 1.7 * PLAYER_SIZE){
@@ -103,7 +99,6 @@ function ballUpdate(){
             }
         }
         var direction = detectDanger (mBalls, 0);
-        console.log(direction);
         if(direction != 0){
             move(direction);
         }
