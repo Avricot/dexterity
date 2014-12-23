@@ -10,7 +10,7 @@ var t = Date.now();
 var r = 0;
 var modulo = 2;
 var trace = [];
-var depth = 100;
+var depth = 150;
 serverPlayer2PosX=0.5;
 var requestAnimationFrameFrequency = 1e3 / 60 //40; //Executé tous les 16 ms
 
@@ -77,6 +77,9 @@ function ballUpdate(){
             if(!collision){
                 var pathDown = calcPath(position, i, j+1);
                 pathDown.unshift(i);
+                if(pathDown.length >= depth){
+                    return pathDown;
+                }
                 var pathLeft = calcPath(position-dx, i-1, j+1);
                 pathLeft.unshift(i);
                 var pathRight = calcPath(position+dx, i+1, j+1);
@@ -97,11 +100,11 @@ function ballUpdate(){
                 if(pathRight.length > pathDown.length && pathRight.length > pathLeft.length){
                     return pathRight;
                 }
-//                if(serverPlayer2PosX<0.5){
-//                    return pathRight;
-//                } else if(serverPlayer2PosX>0.5){
-//                    return pathLeft;
-//                }
+                if(serverPlayer2PosX<0.5){
+                    return pathRight;
+                } else if(serverPlayer2PosX>0.5){
+                    return pathLeft;
+                }
                 return pathDown;
             }
             return [];
