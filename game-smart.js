@@ -7,9 +7,14 @@ var ball4=true;
 var ball5=true;
 
 var t = Date.now();
-
+var r = 0;
+var modulo = 2;
 var trace = [];
+var depth = 100;
 serverPlayer2PosX=0.5;
+var requestAnimationFrameFrequency = 1e3 / 60 //40; //Executé tous les 16 ms
+
+
 function ballUpdate(){
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
     //Le but du jeux : faire bouger X (il peut aller de 0 à WIDTH=400) pour qu'il évite d'être en collision avec une ball.
@@ -33,7 +38,21 @@ function ballUpdate(){
     if(mBalls.length>0 && dt>0){
         var dx = dt;
         var p = [];
-        function calcPath (balls, position, i, j){
+        var cachePosition = [mBalls];
+        for(var i=1;i<depth+1;i++){
+            cachePosition[i] = [];
+            for (var j = 0; j < cachePosition[0].length; j++){
+                var ball = [];
+                ball[0] = cachePosition[i-1][j][0];
+                ball[1] = cachePosition[i-1][j][1];
+                ball[2] = cachePosition[i-1][j][2];
+                ball[3] = cachePosition[i-1][j][3];
+                ball[4] = cachePosition[i-1][j][4];
+                updateBallPosition(dx, ball);
+                cachePosition[i][j] = ball;
+            }
+        }
+        function calcPath (position, i, j){
             if(!p[i] || !p[i][j]){
                 if(!p[i]){
                     p[i] = [];
@@ -42,47 +61,54 @@ function ballUpdate(){
             } else {
                 return [];
             }
-            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>500){
+            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>depth){
                 return [];
             }
-            var nexBalls = [];
             var collision = false;
-            for (var t = 0; t < balls.length; t++){
-                var ball = [];
-                ball[0] = balls[t][0];
-                ball[1] = balls[t][1];
-                ball[2] = balls[t][2];
-                ball[3] = balls[t][3];
-                ball[4] = balls[t][4];
-                if(ball[0] < serverPlayer2PosX + .95 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                    && ball[0] > serverPlayer2PosX - .95 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                    && ball[1] < 1.95 * PLAYER_SIZE){
+            for (var t = 0; t < cachePosition[j].length; t++){
+                var ball = cachePosition[j][t];
+                if(ball[0] < position + 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                    && ball[0] > position - 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                    && ball[1] < 2 * PLAYER_SIZE){
                     collision = true ;
                     //console.log("coooolision-------------------------------------------------------------------------")
                 }
-                updateBallPosition(dt, ball);
-                nexBalls[t] = ball;
             }
             if(!collision){
-                var pathDown = calcPath(nexBalls, position, i, j+1);
+                var pathDown = calcPath(position, i, j+1);
                 pathDown.unshift(i);
-                var pathLeft = calcPath(nexBalls, position-dx, i-1, j+1);
+                var pathLeft = calcPath(position-dx, i-1, j+1);
                 pathLeft.unshift(i);
-                var pathRight = calcPath(nexBalls, position+dx, i+1, j+1);
+                var pathRight = calcPath(position+dx, i+1, j+1);
                 pathRight.unshift(i);
+//                if(j<1){
+//                    console.log(pathDown)
+//                    console.log(pathLeft)
+//                    console.log(pathRight)
+//                    console.log(j+"----------");
+//                }
+
                 if(pathDown.length > pathLeft.length && pathDown.length > pathRight.length){
                     return pathDown;
                 }
                 if(pathLeft.length > pathDown.length && pathLeft.length > pathRight.length){
                     return pathLeft;
                 }
-                return pathRight;
+                if(pathRight.length > pathDown.length && pathRight.length > pathLeft.length){
+                    return pathRight;
+                }
+//                if(serverPlayer2PosX<0.5){
+//                    return pathRight;
+//                } else if(serverPlayer2PosX>0.5){
+//                    return pathLeft;
+//                }
+                return pathDown;
             }
             return [];
         }
         //Position de 1 à 100.
         var index = Math.round(serverPlayer2PosX*100);
-        var bestPath = calcPath(mBalls, serverPlayer2PosX, index, 0);
+        var bestPath = calcPath(serverPlayer2PosX, index, 0);
         if(bestPath.length<2){
             console.log("OK ca déconne");
             console.log(trace)
@@ -92,14 +118,12 @@ function ballUpdate(){
         }
         var direction = bestPath[1] - index;
         move(direction);
-//        var dx = 0.0168;
-//        var dt = 0.0168;
         function move(x){
             serverPlayer2PosX += dx*x;
             //On ne peut pas dépasser
             serverPlayer2PosX = Math.max(PLAYER_SIZE/2,Math.min(serverPlayer2PosX, 1-PLAYER_SIZE));
             var n = WIDTH * PLAYER_SIZE;
-            ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n);
+
             for (var t = 0; t < mBalls.length; t++){
                 var ball = $.extend(true, {}, mBalls[t]);
                 if(ball[0] < serverPlayer2PosX + .7 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
@@ -114,7 +138,7 @@ function ballUpdate(){
 //            }, dx-2);
         }
     }
-
+    r = ++r;
 }
 function playParty(orders) {
     var i =0;
@@ -148,7 +172,7 @@ socket = {
 
     },
     "update": function (e) {
-        //ballUpdate();
+        ballUpdate();
         update(e);
 //        var n = !1, t = e[2];
 //        if (void 0 != timeServerLastPacket) {
@@ -297,7 +321,9 @@ function render() {
 }
 
 function renderBackground() {
-    //ctx.drawImage(spriteBackground, 0, 0, 400, 400)
+    if(r % modulo == 0){
+        ctx.drawImage(spriteBackground, 0, 0, 400, 400)
+    }
 }
 
 function renderBlackFinish(e) {
@@ -305,23 +331,28 @@ function renderBlackFinish(e) {
 }
 
 function renderBalls(e) {
-    var n = WIDTH * BALL_SIZE;
-    for (var t = 0; t < e.length; t++){
-        ctx.save();
-        ctx.translate(e[t][0] * WIDTH, .8 * HEIGHT - e[t][1] * WIDTH);
-        ctx.rotate(mBallsRotation[t] * Math.PI / 180);
-        ctx.translate(-(e[t][0] * WIDTH), -(.8 * HEIGHT - e[t][1] * WIDTH));
-        var ballX = e[t][0] * WIDTH - n / 2;
-        var ballY = .8 * HEIGHT - e[t][1] * WIDTH - n / 2;
-        ctx.drawImage(spriteRock, ballX, ballY, n, n);
-        ctx.restore()
+    if(r % modulo == 0){
+        var n = WIDTH * BALL_SIZE;
+        for (var t = 0; t < e.length; t++){
+            ctx.save();
+            ctx.translate(e[t][0] * WIDTH, .8 * HEIGHT - e[t][1] * WIDTH);
+            ctx.rotate(mBallsRotation[t] * Math.PI / 180);
+            ctx.translate(-(e[t][0] * WIDTH), -(.8 * HEIGHT - e[t][1] * WIDTH));
+            var ballX = e[t][0] * WIDTH - n / 2;
+            var ballY = .8 * HEIGHT - e[t][1] * WIDTH - n / 2;
+            ctx.drawImage(spriteRock, ballX, ballY, n, n);
+            ctx.restore()
+        }
     }
-    ballUpdate();
+    //ballUpdate();
 }
 
 function renderPlayer(e) {
     var n = WIDTH * PLAYER_SIZE;
     //ctx.drawImage(spritePlayer, e * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n)
+    if(r % modulo == 0){
+        ctx.drawImage(spritePlayer2, serverPlayer2PosX * WIDTH - n / 2, .8 * HEIGHT - 2 * n, n, 2 * n);
+    }
 }
 
 function renderGameInfo(e, n, t) {
@@ -332,7 +363,8 @@ var socket, lastPing, avgPing, elemGameInfo = document.getElementById("gameInfo"
 
 window.requestAnimFrame = function () {
     return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function (e) {
-        window.setTimeout(e, 1e3 / 60)
+        //window.setTimeout(e, 1e3 / 60)
+        window.setTimeout(e, requestAnimationFrameFrequency)
     }
 }();
 
