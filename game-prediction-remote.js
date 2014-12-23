@@ -1,4 +1,7 @@
 var t = Date.now();
+var commands = [];
+var commandInProgress=0;
+var lastCommand = 0;
 function ballUpdate(){
     var dt = (Date.now()-t)/1000;
     t= Date.now();
@@ -9,11 +12,18 @@ function ballUpdate(){
             //On ne peut pas dépasser
             //serverPlayer2PosX = Math.max(PLAYER_SIZE/2,Math.min(serverPlayer2PosX, 1-PLAYER_SIZE));
             console.log(x);
+            if(commands.length>0){
+                for(var c=0;c<commands.length;c++){
+                    clearTimeout(commands[c]);
+                }
+                commands = [];
+                socket.emit("commande", 0);
+            }
             socket.emit("commande", x);
-            setTimeout(function () {
-                console.log(0);
+            commands.push (setTimeout(function (c) {
                 socket.emit("commande", 0)
-            }, dx-2);
+                commands.splice(commands.length,1)
+            }(commands.length), dx));
         }
 
 

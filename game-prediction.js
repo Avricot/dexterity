@@ -63,7 +63,7 @@ function ballUpdate(){
                 var ballX = ball[0] * WIDTH - n / 2;
                 var ballY = .8 * HEIGHT - ball[1] * WIDTH - n / 2;
                 //console.log( n / 2)
-                if(ballY>225){
+                if(ballY>200){
 //                    ctx.rect(ballX,ballY,n,n);
 //                    ctx.stroke();
                     //Ca risque de toucher, on le pousse !
@@ -75,7 +75,7 @@ function ballUpdate(){
                         } else if(serverPlayer2PosX*WIDTH>WIDTH-PLAYER_SIZE*WIDTH*1.5 && direction == 1){
                             dangerZone = -1;
                         } else {
-                            dangerZone = direction*-1;
+                            dangerZone = direction;
                         }
                     }lastNewDir
                 }

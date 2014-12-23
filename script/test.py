@@ -10,7 +10,7 @@ import csv
 
 #erreurForm
 
-ifile = open('/home/quentin/intellij/dexterity/script/test.txt', 'r')
+ifile = open('/home/quentin/intellij/dexterity/script/fall.txt', 'r')
 
 #ofile = codecs.open("./result.csv", 'wb', encoding='iso-8859-1')
 ofile = open('./result.txt', 'wb')
@@ -18,7 +18,7 @@ writer = csv.writer(ofile)
 
 lines = ifile.readlines()
 for line in lines:
-    match = re.search("""42(\["u.*)\n""", line)
+    match = re.search("""(\[".*)\n""", line)
     if match:
         command = match.groups()[0]
         print(command+',')
