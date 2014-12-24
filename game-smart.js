@@ -13,7 +13,7 @@ var trace = [];
 var depth = 150;
 serverPlayer2PosX=0.5;
 var requestAnimationFrameFrequency = 1e3 / 60 //40; //Executé tous les 16 ms
-
+done = false;
 
 function ballUpdate(){
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
@@ -52,21 +52,31 @@ function ballUpdate(){
                 cachePosition[i][j] = ball;
             }
         }
-        function calcPath (position, i, j){
+        function calcPath (position, i, j, minDistance){
+            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>depth || i<0 || i>100){
+                return [minDistance];
+            }
             if(!p[i] || !p[i][j]){
                 if(!p[i]){
                     p[i] = [];
                 }
-                p[i][j] = true;
+                // p[i][j] = true;
             } else {
-                return [];
-            }
-            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>depth){
-                return [];
+                //TODO revoir le minimum ici
+//                console.log("p["+i+"]["+j+"]:")
+//                console.log(p[i][j])
+                var copy = p[i][j].slice();
+                copy[copy.length-1]=Math.min(copy[copy.length-1], minDistance);
+                return copy;
             }
             var collision = false;
             for (var t = 0; t < cachePosition[j].length; t++){
                 var ball = cachePosition[j][t];
+                //distance uniquement si la balle descend ?
+                if(ball[2]<0){
+                    var distance = Math.abs(Math.sqrt((ball[0]-position)*(ball[0]-position) + (ball[1]-PLAYER_SIZE)*(ball[1]-PLAYER_SIZE)));
+                    minDistance = Math.min(distance, minDistance);
+                }
                 if(ball[0] < position + 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
                     && ball[0] > position - 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
                     && ball[1] < 2 * PLAYER_SIZE){
@@ -75,56 +85,87 @@ function ballUpdate(){
                 }
             }
             if(!collision){
-                var pathDown = calcPath(position, i, j+1);
-                pathDown.unshift(i);
-                if(pathDown.length >= depth){
-                    return pathDown;
-                }
-                var pathLeft = calcPath(position-dx, i-1, j+1);
+                var pathLeft = calcPath(position-dx, i-1, j+1, minDistance);
                 pathLeft.unshift(i);
-                var pathRight = calcPath(position+dx, i+1, j+1);
+                var pathRight = calcPath(position+dx, i+1, j+1, minDistance);
                 pathRight.unshift(i);
-//                if(j<1){
+                var pathDown = calcPath(position, i, j+1, minDistance);
+                pathDown.unshift(i);
+//                if(pathDown.length >= depth){
+//                    return pathDown;
+//                }
+                if(j<1){
 //                    console.log(pathDown)
 //                    console.log(pathLeft)
 //                    console.log(pathRight)
 //                    console.log(j+"----------");
-//                }
+                }
+
+                var returnedPath = pathDown;
 
                 if(pathDown.length > pathLeft.length && pathDown.length > pathRight.length){
-                    return pathDown;
+                    returnedPath = pathDown;
                 }
                 if(pathLeft.length > pathDown.length && pathLeft.length > pathRight.length){
-                    return pathLeft;
+                    returnedPath = pathLeft;
                 }
                 if(pathRight.length > pathDown.length && pathRight.length > pathLeft.length){
-                    return pathRight;
+                    returnedPath = pathRight;
                 }
-                if(serverPlayer2PosX<0.5){
-                    return pathRight;
-                } else if(serverPlayer2PosX>0.5){
-                    return pathLeft;
+                var minDown = pathDown[pathDown.length-1];
+                var minLeft = pathLeft[pathLeft.length-1];
+                var minRight = pathRight[pathRight.length-1];
+                if(j == 0){
+//                    console.log(minDown);
+//                    console.log(minLeft);
+//                    console.log(minRight);
                 }
-                return pathDown;
+                if(minDown > minLeft && minDown > minRight){
+                    returnedPath = pathDown;
+                }
+                if(minLeft > minDown && minLeft > minRight){
+                    returnedPath = pathLeft;
+                }
+                if(minRight > minLeft && minRight > minLeft){
+                    returnedPath = pathRight;
+                }
+//
+//                if(serverPlayer2PosX<0.5){
+//                    return pathRight;
+//                } else if(serverPlayer2PosX>0.5){
+//                    return pathLeft;
+//                }
+                p[i][j] = returnedPath;
+//                console.log("returnedPath:p["+i+"]["+j+"]:")
+//                console.log(returnedPath)
+                return returnedPath;
             }
-            return [];
+            return [minDistance];
         }
         //Position de 1 à 100.
         var index = Math.round(serverPlayer2PosX*100);
-        var bestPath = calcPath(serverPlayer2PosX, index, 0);
-        if(bestPath.length<2){
-            console.log("OK ca déconne");
-            console.log(trace)
+        //if(!done){
+            var bestPath = calcPath(serverPlayer2PosX, index, 0, 99999999999);
+//            done = true;
+//        }
+        if(bestPath.length<3){
+//            console.log("OK ca déconne");
+//            console.log(trace)
         } else {
             if(bestPath[1] != 50)
-            trace.push(bestPath)
+//            trace.push(bestPath)
+            var direction = bestPath[1] - index;
+            move(direction);
         }
-        var direction = bestPath[1] - index;
-        move(direction);
         function move(x){
             serverPlayer2PosX += dx*x;
             //On ne peut pas dépasser
+//            console.log(dx*x);
+//            console.log(x);
+//            console.log(serverPlayer2PosX);
             serverPlayer2PosX = Math.max(PLAYER_SIZE/2,Math.min(serverPlayer2PosX, 1-PLAYER_SIZE));
+//            console.log(serverPlayer2PosX);
+//            console.log("----------------------------------");
             var n = WIDTH * PLAYER_SIZE;
 
             for (var t = 0; t < mBalls.length; t++){
