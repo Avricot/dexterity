@@ -10,7 +10,7 @@ var t = Date.now();
 var r = 0;
 var modulo = 2;
 var trace = [];
-var depth = 150;
+var depth = 200;
 serverPlayer2PosX=0.5;
 var requestAnimationFrameFrequency = 1e3 / 60 //40; //Executé tous les 16 ms
 done = false;
@@ -66,38 +66,38 @@ function ballUpdate(){
 //                console.log("p["+i+"]["+j+"]:")
 //                console.log(p[i][j])
                 var copy = p[i][j].slice();
-                if(minDistance < copy[copy.length-1]){
-                    copy[copy.length-1] = minDistance;
-                }
+//                if(minDistance < copy[copy.length-1]){
+//                    copy[copy.length-1] = minDistance;
+//                }
+                copy[0] += minDistance;
                 return copy;
             }
             var collision = false;
+            var distanceM = 0;
             for (var t = 0; t < cachePosition[j].length; t++){
                 var ball = cachePosition[j][t];
                 //distance uniquement si la balle descend ?
                 //if(ball[2]<0){
-                    var distance = Math.sqrt((ball[0]-position)*(ball[0]-position) + (ball[1]-PLAYER_SIZE)*(ball[1]-PLAYER_SIZE));
+                    var distance = (ball[0]-position)*(ball[0]-position) + (ball[1]-PLAYER_SIZE)*(ball[1]-PLAYER_SIZE);
                     if(distance<0){
                         distance = distance*-1;
                     }
-                    if(distance < minDistance){
-                        minDistance = distance ;
-                    }
-                //}
-                if(ball[0] < position + 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                    && ball[0] > position - 1 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                    && ball[1] < 2 * PLAYER_SIZE){
+//                    if(distance < minDistance){
+//                        minDistance = distance ;
+//                    }
+                distanceM += distance;
+
+                if(ball[0] < position + 1.5 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                    && ball[0] > position - 1.5 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
+                    && ball[1] < 2.5 * PLAYER_SIZE){
                     collision = true ;
                     //console.log("coooolision-------------------------------------------------------------------------")
                 }
             }
             if(!collision){
-                var pathLeft = calcPath(position-dx, i-1, j+1, minDistance);
-                pathLeft.unshift(i);
-                var pathRight = calcPath(position+dx, i+1, j+1, minDistance);
-                pathRight.unshift(i);
-                var pathDown = calcPath(position, i, j+1, minDistance);
-                pathDown.unshift(i);
+                var pathLeft = calcPath(position-dx, i-1, j+1);
+                var pathRight = calcPath(position+dx, i+1, j+1);
+                var pathDown = calcPath(position, i, j+1);
 //                if(pathDown.length >= depth){
 //                    return pathDown;
 //                }
@@ -108,7 +108,7 @@ function ballUpdate(){
 //                    console.log(j+"----------");
                 }
 
-                var returnedPath = pathDown;
+                var returnedPath = null;
 
                 if(pathDown.length > pathLeft.length && pathDown.length > pathRight.length){
                     returnedPath = pathDown;
@@ -119,22 +119,27 @@ function ballUpdate(){
                 if(pathRight.length > pathDown.length && pathRight.length > pathLeft.length){
                     returnedPath = pathRight;
                 }
-                var minDown = pathDown[pathDown.length-1];
-                var minLeft = pathLeft[pathLeft.length-1];
-                var minRight = pathRight[pathRight.length-1];
                 if(j == 0){
 //                    console.log(minDown);
 //                    console.log(minLeft);
 //                    console.log(minRight);
                 }
-                if(minDown > minLeft && minDown > minRight){
-                    returnedPath = pathDown;
-                }
-                if(minLeft > minDown && minLeft > minRight){
-                    returnedPath = pathLeft;
-                }
-                if(minRight > minLeft && minRight > minLeft){
-                    returnedPath = pathRight;
+                var minDown = pathDown[0];
+                var minLeft = pathLeft[0];
+                var minRight = pathRight[0];
+                if(returnedPath == null){
+                    if(minDown > minLeft && minDown > minRight){
+                        returnedPath = pathDown;
+                    }
+                    if(minLeft > minDown && minLeft > minRight){
+                        returnedPath = pathLeft;
+                    }
+                    if(minRight > minLeft && minRight > minLeft){
+                        returnedPath = pathRight;
+                    }
+                    if(returnedPath == null){
+                        returnedPath = pathDown;
+                    }
                 }
 //
 //                if(serverPlayer2PosX<0.5){
@@ -145,23 +150,27 @@ function ballUpdate(){
                 p[i][j] = returnedPath;
 //                console.log("returnedPath:p["+i+"]["+j+"]:")
 //                console.log(returnedPath)
+                returnedPath = returnedPath.slice();
+                returnedPath.push(i);
+                returnedPath[0] = returnedPath[0]+distance;
                 return returnedPath;
             }
-            return [minDistance];
+            return [0];
         }
         //Position de 1 à 100.
         var index = Math.round(serverPlayer2PosX*100);
-        //if(!done){
-            var bestPath = calcPath(serverPlayer2PosX, index, 0, 99999999999);
+//        if(!done){
+            var bestPath = calcPath(serverPlayer2PosX, index, 0);
 //            done = true;
 //        }
+//        console.log(bestPath)
         if(bestPath.length<3){
             console.log("OK ca déconne");
             console.log(trace)
         } else {
-            if(bestPath[1] != 50)
+            if(bestPath[bestPath.length-2] != 50)
             trace.push(bestPath)
-            var direction = bestPath[1] - index;
+            var direction = bestPath[bestPath.length-2] - index;
             move(direction);
         }
         function move(x){
