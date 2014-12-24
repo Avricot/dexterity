@@ -8,12 +8,13 @@ var ball5=true;
 
 var t = Date.now();
 var r = 0;
-var modulo = 2;
+var modulo = 1;
 var trace = [];
-var depth = 200;
+var depth = 70;
 serverPlayer2PosX=0.5;
 var requestAnimationFrameFrequency = 1e3 / 60 //40; //Executé tous les 16 ms
 done = false;
+var resolution=100;
 
 function ballUpdate(){
     //ICI dans balls tu as un tableau avec toutes les balles disponibles.
@@ -53,7 +54,7 @@ function ballUpdate(){
             }
         }
         function calcPath (position, i, j, minDistance){
-            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>depth || i<0 || i>100){
+            if(position<PLAYER_SIZE/2 || position > 1-PLAYER_SIZE/2 || j>depth || i<0 || i>resolution){
                 return [minDistance];
             }
             if(!p[i] || !p[i][j]){
@@ -89,7 +90,7 @@ function ballUpdate(){
 
                 if(ball[0] < position + 1.5 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
                     && ball[0] > position - 1.5 * (BALL_SIZE / 2 + PLAYER_SIZE / 2)
-                    && ball[1] < 2.5 * PLAYER_SIZE){
+                    && ball[1] < 2.3 * PLAYER_SIZE){
                     collision = true ;
                     //console.log("coooolision-------------------------------------------------------------------------")
                 }
@@ -158,7 +159,7 @@ function ballUpdate(){
             return [0];
         }
         //Position de 1 à 100.
-        var index = Math.round(serverPlayer2PosX*100);
+        var index = Math.round(serverPlayer2PosX*resolution);
 //        if(!done){
             var bestPath = calcPath(serverPlayer2PosX, index, 0);
 //            done = true;
@@ -168,13 +169,31 @@ function ballUpdate(){
             console.log("OK ca déconne");
             console.log(trace)
         } else {
-            if(bestPath[bestPath.length-2] != 50)
-            trace.push(bestPath)
-            var direction = bestPath[bestPath.length-2] - index;
-            move(direction);
+//            if(bestPath[bestPath.length-2] != 50)
+//            trace.push(bestPath)
+            var positionNumber = dx*100;
+//            var direction = bestPath[bestPath.length-2]-index;
+//            for(var i=0;i<positionNumber;i++){
+//                if(bestPath.length-2-i>0){
+//                    direction+=bestPath[bestPath.length-2-i]-bestPath[bestPath.length-2-i+1];
+//                }
+//            }
+//            var dir = 0;
+//            if(direction>0){
+//                dir = 1;
+//            } else if (direction<0){
+//                dir = -1;
+//            }
+            //move(dir, positionNumber*10/1000);
+            move(bestPath[bestPath.length-2]-index, positionNumber/100);
         }
-        function move(x){
-            serverPlayer2PosX += dx*x;
+        function move(x, dt){
+            if(x!=0){
+//                console.log(x);
+//                console.log(dt);
+//                console.log("------------");
+            }
+            serverPlayer2PosX += dt*x;
             //On ne peut pas dépasser
 //            console.log(dx*x);
 //            console.log(x);
